@@ -1,0 +1,60 @@
+services:
+
+  #  typescript application configuration
+
+  typescript-backend:
+    image: node:22-alpine
+    container_name: typescript-backend
+    restart: unless-stopped
+    ports:
+      - 5000:5000
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - backend-node-modules:/app/node_modules
+    working_dir: /app
+    command: sh -c "npm install --no-audit --no-fund && npm run start:dev"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: typescript
+
+  db:
+    image: postgres:16-alpine
+    container_name: db
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=typescript
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d typescript"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  adminer:
+      image: adminer
+      restart: always
+      ports:
+        - 82:8080
+
+  redis:
+      image: redis:6.2
+      container_name: redis
+      restart: unless-stopped
+      volumes:
+          - redis-data:/data
+
+volumes:
+  backend-node-modules:
+  postgres-data:
+  redis-data:
